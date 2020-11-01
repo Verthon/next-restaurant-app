@@ -1,6 +1,9 @@
-import { PrismaClient } from "@prisma/client";
-import { useState } from "react";
+import { PrismaClient } from "@prisma/client"
+import { useState } from "react"
+import useSWR from 'swr'
+
 const prisma = new PrismaClient();
+const fetcher = url => fetch(url).then(r => r.json())
 
 export async function getServerSideProps() {
   const products = await prisma.product.findMany();
@@ -10,8 +13,10 @@ export async function getServerSideProps() {
   };
 }
 
-export default function AdminProductsPage({ products, categories }) {
-  const DEFAULT_CATEGORY = categories[0].name;
+export default function AdminProductsPage({ categories }) {
+  const { data } = useSWR('/api/admin/products', fetcher)
+  const { data: categoryData } = useSWR('/api/admin/categories', fetcher)
+  const DEFAULT_CATEGORY = categories[0].name || 'appetizers';
   const [form, setForm] = useState({
     name: "",
     price: "",
@@ -36,12 +41,17 @@ export default function AdminProductsPage({ products, categories }) {
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
+  if(!data) {
+    return (
+      <p>Loading...</p>
+    )
+  }
   return (
     <div>
       <h1>List of available products</h1>
       <h2>Add new product</h2>
       <ul>
-        {products.map((product) => {
+        {data.products.map((product) => {
           return (
             <li key={product.id}>
               <h3>{product.name}</h3>
