@@ -1,11 +1,14 @@
-import { PrismaClient } from "@prisma/client"
-import { useState } from "react"
-import useSWR from 'swr'
+import { PrismaClient } from "@prisma/client";
+import { useState } from "react";
+import useSWR from "swr";
+
+import { checkIfAdmin } from '../../../utils/session'
 
 const prisma = new PrismaClient();
-const fetcher = url => fetch(url).then(r => r.json())
+const fetcher = (url) => fetch(url).then((r) => r.json());
 
-export async function getServerSideProps() {
+export async function getServerSideProps(context) {
+  await checkIfAdmin(context.req, context.res);
   const products = await prisma.product.findMany();
   const categories = await prisma.category.findMany();
   return {
@@ -14,9 +17,9 @@ export async function getServerSideProps() {
 }
 
 export default function AdminProductsPage({ categories }) {
-  const { data } = useSWR('/api/admin/products', fetcher)
-  const { data: categoryData } = useSWR('/api/admin/categories', fetcher)
-  const DEFAULT_CATEGORY = categories[0].name || 'appetizers';
+  const { data } = useSWR("/api/admin/products", fetcher);
+  const { data: categoryData } = useSWR("/api/admin/categories", fetcher);
+  const DEFAULT_CATEGORY = categories[0].name || "appetizers";
   const [form, setForm] = useState({
     name: "",
     price: "",
@@ -41,10 +44,8 @@ export default function AdminProductsPage({ categories }) {
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
-  if(!data) {
-    return (
-      <p>Loading...</p>
-    )
+  if (!data) {
+    return <p>Loading...</p>;
   }
   return (
     <div>
